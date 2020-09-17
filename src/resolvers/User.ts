@@ -29,7 +29,7 @@ class FieldError {
 
 @ObjectType()
 class UserResponse {
-	@Field(() => [Error], { nullable: true })
+	@Field(() => [FieldError], { nullable: true })
 	errors?: FieldError[];
 
 	@Field(() => User, { nullable: true })
@@ -38,18 +38,52 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
-	@Mutation(() => User)
+	@Mutation(() => UserResponse)
 	async register(
 		@Arg('options') options: UserNamePasswordInput,
 		@Ctx() { em }: MyContext
-	) {
+	): Promise<UserResponse> {
+		if (options.username.length <= 2) {
+			return {
+				errors: [
+					{
+						field: 'username',
+						message: 'username must be longer',
+					},
+				],
+			};
+		}
+		if (options.password.length <= 3) {
+			return {
+				errors: [
+					{
+						field: 'password',
+						message: 'password must be longer',
+					},
+				],
+			};
+		}
 		const hashedPassword = await argon2.hash(options.password);
 		const user = em.create(User, {
 			username: options.username,
 			password: hashedPassword,
 		});
-		await em.persistAndFlush(user);
-		return user;
+		try {
+			await em.persistAndFlush(user);
+		} catch (error) {
+			if (error.code === '23505') {
+				//duplicate username error
+				return {
+					errors: [
+						{
+							field: 'username',
+							message: 'username already taken',
+						},
+					],
+				};
+			}
+		}
+		return { user };
 	}
 
 	@Mutation(() => UserResponse)

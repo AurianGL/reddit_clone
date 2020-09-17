@@ -52,7 +52,7 @@ export class PostResolver {
 		try {
 			await em.nativeDelete(Post, { id });
 		} catch (error) {
-			retu
+			return error
 		}
 		return true
 	}
