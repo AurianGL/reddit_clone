@@ -6,4 +6,5 @@ export class HelloResolver {
   hello() {
     return 'hello world'
   }
+
 }
