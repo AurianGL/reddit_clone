@@ -12,7 +12,7 @@ import { UserResolver } from './resolvers/User';
 import redis from 'redis';
 import session from 'express-session';
 import connectRedis from 'connect-redis';
-import { MyContext } from './types';
+import cors from 'cors';
 // console.log('dirname: ', __dirname);
 
 const main = async () => {
@@ -22,8 +22,11 @@ const main = async () => {
 
 	const RedisStore = connectRedis(session);
 	const redisClient = redis.createClient();
-
 	app.use(
+		cors({
+			origin: 'http://localhost:3000',
+			credentials: true,
+		}),
 		session({
 			name: 'qid',
 			store: new RedisStore({
@@ -52,10 +55,13 @@ const main = async () => {
 			resolvers: [HelloResolver, PostResolver, UserResolver],
 			validate: false,
 		}),
-		context: ({ req, res }): MyContext => ({ em: orm.em, req, res }),
+		context: ({ req, res }) => ({ em: orm.em, req, res }),
 	});
 
-	apolloServer.applyMiddleware({ app });
+	apolloServer.applyMiddleware({
+		app,
+		cors: { origin: 'http://localhost:3000' },
+	});
 
 	app.listen(4000, () => {
 		console.log('server started at localhost:4000');
