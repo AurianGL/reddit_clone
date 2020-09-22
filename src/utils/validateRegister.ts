@@ -8,7 +8,7 @@ export const validateRegister = (options: UserNamePasswordInput) => {
 				message: 'username must be longer',
 			},
 		];
-	if (options.email.includes('@'))
+	if (!options.email.includes('@'))
 		return [
 			{
 				field: 'email',
@@ -25,7 +25,7 @@ export const validateRegister = (options: UserNamePasswordInput) => {
 	if (options.username.includes('@'))
 		return [
 			{
-				field: 'email',
+				field: 'username',
 				message: "can't include @",
 			},
 		];
