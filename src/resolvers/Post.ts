@@ -1,59 +1,65 @@
 import { Post } from '../entities/Post';
+import {
+	Arg,
+	Query,
+	Resolver,
+	Mutation,
+	Field,
+	InputType,
+	Ctx,
+	UseMiddleware,
+} from 'type-graphql';
 import { MyContext } from 'src/types';
-import { Arg, Ctx, Query, Resolver, Int, Mutation } from 'type-graphql';
+import { isAuth } from '../middleware/isAuth';
+
+@InputType()
+class PostInput {
+	@Field()
+	title: string;
+
+	@Field()
+	text: string;
+}
 
 @Resolver()
 export class PostResolver {
 	@Query(() => [Post])
-	posts(@Ctx() { em }: MyContext): Promise<Post[]> {
-		return em.find(Post, {});
+	async posts(): Promise<Post[]> {
+		return Post.find();
 	}
 
 	@Query(() => Post, { nullable: true })
-	post(
-		@Arg('id', () => Int) id: number,
-		@Ctx() { em }: MyContext
-	): Promise<Post | null> {
-		return em.findOne(Post, { id });
+	post(@Arg('id') id: number): Promise<Post | undefined> {
+		return Post.findOne(id);
 	}
 
 	@Mutation(() => Post)
+	@UseMiddleware(isAuth)
 	async createPost(
-		@Arg('title') title: string,
-		@Ctx() { em }: MyContext
-	): Promise<Post | null> {
-		const post = em.create(Post, { title });
-		await em.persistAndFlush(post);
-		return post;
+		@Arg('input') input: PostInput,
+		@Ctx() { req }: MyContext
+	): Promise<Post> {
+		return Post.create({ ...input, creatorId: req.session.userid }).save();
 	}
 
 	@Mutation(() => Post)
 	async updatePost(
 		@Arg('id') id: number,
-		@Arg('title', () => String, { nullable: true }) title: string,
-		@Ctx() { em }: MyContext
+		@Arg('title', () => String, { nullable: true }) title: string
 	): Promise<Post | null> {
-		const post = await em.findOne(Post, { id });
+		const post = await Post.findOne(id);
 		if (!post) {
 			return null;
 		}
 		if (typeof title !== 'undefined') {
-			post.title = title;
-			await em.persistAndFlush(post);
+			await Post.update({ id }, { title });
 		}
 		return post;
 	}
 
 	@Mutation(() => Boolean)
-	async deletePost(
-		@Arg('id') id: number,
-		@Ctx() { em }: MyContext
-	): Promise<boolean> {
-		try {
-			await em.nativeDelete(Post, { id });
-		} catch (error) {
-			return error
-		}
-		return true
+	async deletePost(@Arg('id') id: number): Promise<boolean> {
+		await Post.delete(id);
+		return true;
 	}
 }
