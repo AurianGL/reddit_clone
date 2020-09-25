@@ -1,4 +1,4 @@
-import { Field, ObjectType } from 'type-graphql';
+import { Field, ID, ObjectType } from 'type-graphql';
 import {
 	BaseEntity,
 	Column,
@@ -14,12 +14,12 @@ import { User } from './User';
 @Entity()
 export class Post extends BaseEntity{
 	
-	@Field()
-	@PrimaryGeneratedColumn()
+	@Field(() => ID)
+	@PrimaryGeneratedColumn("uuid")
 	id!: number;
 
 	@ManyToOne(() => User, user => user.posts)
-	origianlPoster: User;
+	creator: User;
 
 	@Field()
 	@Column()

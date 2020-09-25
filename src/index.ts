@@ -11,8 +11,9 @@ import Redis from 'ioredis';
 import session from 'express-session';
 import connectRedis from 'connect-redis';
 import cors from 'cors';
-import {createConnection} from 'typeorm'
+import { createConnection } from 'typeorm';
 import { User } from './entities/User';
+import path from 'path';
 // console.log('dirname: ', __dirname);
 
 const main = async () => {
@@ -24,9 +25,14 @@ const main = async () => {
 		password: 'postgres',
 		logging: true,
 		synchronize: true,
-		entities: [Post, User]
-	})
-	
+		migrations: [path.join(__dirname, './migrations')],
+		cli: {
+			"migrationsDir": path.join(__dirname, './migrations')
+		},
+		entities: [Post, User],
+	});
+	await conn.runMigrations();
+
 	const app = express();
 
 	const RedisStore = connectRedis(session);
@@ -64,7 +70,7 @@ const main = async () => {
 			resolvers: [HelloResolver, PostResolver, UserResolver],
 			validate: false,
 		}),
-		context: ({ req, res }) => ({req, res, redis }),
+		context: ({ req, res }) => ({ req, res, redis }),
 	});
 
 	apolloServer.applyMiddleware({
@@ -81,7 +87,6 @@ const main = async () => {
 	// await orm.em.persistAndFlush(post);
 	// console.log('--------------------sql 2------------------');
 	// await orm.em.nativeInsert(Post, { title: 'my second post' });
-
 };
 
 main();
